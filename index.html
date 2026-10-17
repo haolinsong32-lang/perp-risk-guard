@@ -363,31 +363,65 @@ function calc(){
     `<div style="font-size:12px;color:var(--acc);margin-top:4px">${T('rankBeat').replace('{x}',beat)}</div></div></div>`;
   window._rank={grade,color,note,beat,liq:window._plan?.liq||0,qty:window._plan?.qty||0,tot:window._plan?.tot||0};
 }
-function genShare(){
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>res(i);i.onerror=rej;i.src=src;setTimeout(rej,9000);});}
+async function genShare(){
   const r=window._rank;
   if(!r){ alert(LANG==='en'?'Fill the form first':'先填完上面的参数'); return; }
-  const dir=S.dir==='long'?T('long'):T('short');
+  const en=LANG==='en', dir=S.dir==='long'?T('long'):T('short');
+  const siteUrl='https://haolinsong32-lang.github.io/perp-risk-guard/';
   const W=1200,H=630,c=document.createElement('canvas'); c.width=W; c.height=H;
   const x=c.getContext('2d');
+  // 背景 + 段位色光晕
   x.fillStyle='#0f1115'; x.fillRect(0,0,W,H);
-  const g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,r.color+'33'); g.addColorStop(1,'#0f111500');
+  const g=x.createRadialGradient(120,120,40,120,120,620); g.addColorStop(0,r.color+'40'); g.addColorStop(1,'#0f111500');
   x.fillStyle=g; x.fillRect(0,0,W,H);
-  x.strokeStyle=r.color; x.lineWidth=6; x.strokeRect(18,18,W-36,H-36);
-  x.fillStyle='#e8ecf3'; x.font='700 34px sans-serif';
-  x.fillText(LANG==='en'?'PERP RISK GUARD · RISK RANK':'合约风控计算器 · 风控段位',50,80);
-  x.fillStyle=r.color; x.font='900 200px sans-serif'; x.textAlign='center';
-  x.fillText(r.grade,W/2,H/2+90); x.textAlign='left';
-  x.fillStyle='#e8ecf3'; x.font='700 40px sans-serif';
-  x.fillText(T('rank'+r.grade),50,H/2+10);
-  x.fillStyle='#8b93a7'; x.font='400 26px sans-serif';
-  x.fillText(`${dir} · ${T('entry')} ${$('entry').value} · ${T('lev')} ${$('lev').value}x · ${T('liq')}≈${(r.liq||0).toFixed(2)}`,50,H/2+70);
+  // 细网格底纹
+  x.strokeStyle='#ffffff08'; x.lineWidth=1;
+  for(let i=0;i<W;i+=44){ x.beginPath(); x.moveTo(i,0); x.lineTo(i,H); x.stroke(); }
+  for(let i=0;i<H;i+=44){ x.beginPath(); x.moveTo(0,i); x.lineTo(W,i); x.stroke(); }
+  // 外框
+  x.strokeStyle=r.color; x.lineWidth=5;
+  if(x.roundRect){ x.beginPath(); x.roundRect(16,16,W-32,H-32,22); x.stroke(); } else { x.strokeRect(16,16,W-32,H-32); }
+  // 顶部小标题
+  x.fillStyle='#f0a35e'; x.font='700 28px sans-serif';
+  x.fillText(en?'PERP RISK GUARD · RISK RANK CHALLENGE':'合约风控计算器 · 风控段位挑战',56,74);
+  x.fillStyle='#8b93a7'; x.font='400 20px sans-serif';
+  x.fillText(new Date().toISOString().slice(0,10),56,106);
+  // 左侧：大字段位
+  x.fillStyle=r.color; x.font='900 250px sans-serif'; x.textAlign='center';
+  x.shadowColor=r.color; x.shadowBlur=44;
+  x.fillText(r.grade,235,415); x.shadowBlur=0; x.textAlign='left';
+  // 段位名 + 击败数
+  x.fillStyle='#e8ecf3'; x.font='800 46px sans-serif';
+  x.fillText(T('rank'+r.grade),430,300);
   x.fillStyle=r.color; x.font='700 30px sans-serif';
-  x.fillText(T('rankBeat').replace('{x}',r.beat),50,H-90);
-  x.fillStyle='#5b9dff'; x.font='600 26px sans-serif';
-  x.fillText(T('shareTag'),50,H-45);
-  x.fillStyle='#8b93a7'; x.font='400 22px sans-serif'; x.textAlign='right';
-  x.fillText('haolinsong32-lang.github.io/perp-risk-guard',W-50,H-45); x.textAlign='left';
+  x.fillText(T('rankBeat').replace('{x}',r.beat),430,348);
+  // 参数行
+  x.fillStyle='#8b93a7'; x.font='400 25px sans-serif';
+  x.fillText(`${dir} · ${T('entry')} ${$('entry').value} · ${T('lev')} ${$('lev').value}x · ${T('liq')}≈${(r.liq||0).toFixed(2)}`,430,396);
+  if(r.tot){ x.fillStyle='#2ecc8f'; x.font='600 25px sans-serif'; x.fillText(`${en?'Scaled TP total':'梯度止盈合计'} +${(r.tot||0).toFixed(2)} USDT`,430,434); }
+  // 底部话题
+  x.fillStyle='#5b9dff'; x.font='700 28px sans-serif';
+  x.fillText(T('shareTag'),56,H-64);
+  // 右侧：二维码白底框
+  const qx=W-290,qy=150,qs=200;
+  x.fillStyle='#ffffff';
+  if(x.roundRect){ x.beginPath(); x.roundRect(qx-14,qy-14,qs+28,qs+28,18); x.fill(); } else { x.fillRect(qx-14,qy-14,qs+28,qs+28); }
+  let qrOk=true;
+  try{
+    const img=await loadImg('https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data='+encodeURIComponent(siteUrl));
+    x.drawImage(img,qx,qy,qs,qs);
+  }catch(e){
+    qrOk=false;
+    x.fillStyle='#111'; x.font='700 22px sans-serif'; x.textAlign='center';
+    x.fillText(en?'Open the link ↓':'打开下方链接',qx+qs/2,qy+qs/2-6); x.textAlign='left';
+  }
+  x.fillStyle='#e8ecf3'; x.font='700 24px sans-serif'; x.textAlign='center';
+  x.fillText(en?'Scan to test your rank':'扫码测你的段位',qx+qs/2,qy+qs+52);
+  x.fillStyle='#8b93a7'; x.font='400 19px sans-serif';
+  x.fillText('haolinsong32-lang.github.io/perp-risk-guard',qx+qs/2,qy+qs+82); x.textAlign='left';
   const a=document.createElement('a'); a.download=`risk-rank-${r.grade}.png`; a.href=c.toDataURL('image/png'); a.click();
+  if(!qrOk) alert(en?'Offline: QR replaced by text link':'当前离线：二维码已用链接文字代替');
 }
 function copyPlan(){
   const p=window._plan||{};
