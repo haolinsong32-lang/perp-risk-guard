@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合约风控计算器 · 开仓前必算</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--txt:#e8ecf3;--sub:#8b93a7;--acc:#5b9dff;--ok:#2ecc8f;--warn:#ffb020;--bad:#ff5d6c;}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;}
+  body{background:var(--bg);color:var(--txt);padding:20px 12px 60px;line-height:1.5;}
+  .wrap{max-width:760px;margin:0 auto;}
+  h1{font-size:20px;font-weight:700;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;}
+  #langBtn{background:#0f1218;border:1px solid var(--line);color:var(--sub);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;}
+  #langBtn:hover{border-color:var(--acc);color:var(--txt);}
+  .slogan{color:var(--sub);font-size:13px;margin:4px 0 18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;}
+  .card h2{font-size:14px;color:var(--acc);margin-bottom:12px;font-weight:600;}
+  label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px;}
+  input,select{width:100%;background:#0f1218;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-size:15px;}
+  input:focus{outline:none;border-color:var(--acc);}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .seg{display:flex;gap:6px;margin-top:4px;}
+  .seg button{flex:1;background:#0f1218;border:1px solid var(--line);color:var(--sub);border-radius:9px;padding:9px 0;font-size:14px;cursor:pointer;}
+  .seg button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;}
+  .out{margin-top:12px;border-radius:10px;overflow:hidden;}
+  .out div{display:flex;justify-content:space-between;padding:9px 12px;font-size:14px;border-bottom:1px solid var(--line);}
+  .out div:last-child{border-bottom:none;}
+  .out .k{color:var(--sub);}
+  .ok{color:var(--ok);font-weight:700;} .warn{color:var(--warn);font-weight:700;} .bad{color:var(--bad);font-weight:700;}
+  .alert{border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px;display:none;}
+  .alert.show{display:block;}
+  .alert.bad{background:#ff5d6c18;border:1px solid #ff5d6c55;color:var(--bad);}
+  .alert.warn{background:#ffb02018;border:1px solid #ffb02055;color:var(--warn);}
+  .alert.ok{background:#2ecc8f18;border:1px solid #2ecc8f55;color:var(--ok);}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+  th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;}
+  th:first-child,td:first-child{text-align:left;color:var(--sub);}
+  .hint{font-size:12px;color:var(--sub);margin-top:8px;}
+  .big{font-size:22px;font-weight:800;}
+  .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:20px;}
+  button.act{width:100%;margin-top:12px;background:var(--acc);border:none;color:#fff;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;}
+  button.act:active{opacity:.8;}
+  .chal{border:1px dashed #5b9dff66;}
+  .chal .steps{font-size:13px;color:var(--txt);line-height:2;margin-top:4px;}
+  .chal a{color:var(--acc);text-decoration:none;}
+  .chal a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛡️ <span data-i18n="h1">合约风控计算器</span><button id="langBtn" onclick="switchLang()">EN</button></h1>
+  <div class="slogan" data-i18n="slogan">开仓前花 20 秒，挡住 90% 的爆仓 · 强平距离 / 仓位 / 网格 / 梯度止盈 一次算清</div>
+
+  <!-- 1. 方向与账户 -->
+  <div class="card">
+    <h2 data-i18n="card1">① 账户与方向</h2>
+    <div class="seg" id="dirSeg">
+      <button data-v="long" class="on" onclick="seg('dir','long')" data-i18n="dirLong">做多</button>
+      <button data-v="short" onclick="seg('dir','short')" data-i18n="dirShort">做空</button>
+    </div>
+    <div class="row">
+      <div><label data-i18n="equity">账户余额 (USDT)</label><input id="equity" type="number" value="1000"></div>
+      <div><label data-i18n="lev">杠杆倍数</label><input id="lev" type="number" value="20" step="1"></div>
+    </div>
+    <div class="row">
+      <div><label data-i18n="riskPct">单笔风险比例 %（建议 1~3）</label><input id="riskPct" type="number" value="2" step="0.5"></div>
+      <div><label data-i18n="mmr">维持保证金率 %（一般 0.5）</label><input id="mmr" type="number" value="0.5" step="0.1"></div>
+    </div>
+  </div>
+
+  <!-- 2. 仓位与强平 -->
+  <div class="card">
+    <h2 data-i18n="card2">② 开仓 / 止损 / 强平</h2>
+    <div class="row3">
+      <div><label data-i18n="entry">开仓价</label><input id="entry" type="number" value="68000" step="any"></div>
+      <div><label data-i18n="stop">止损价</label><input id="stop" type="number" value="66800" step="any"></div>
+      <div><label data-i18n="face">合约面值（币/张，0=按币数）</label><input id="face" type="number" value="0.001" step="any"></div>
+    </div>
+    <div class="out" id="r1"></div>
+    <div class="alert" id="a1"></div>
+  </div>
+
+  <!-- 3. 网格挂单 + 强平检查 -->
+  <div class="card">
+    <h2 data-i18n="card3">③ 网格挂单（自动取 05 结尾整数）</h2>
+    <div class="row3">
+      <div><label data-i18n="gHi">网格上沿</label><input id="gHi" type="number" value="68000" step="any"></div>
+      <div><label data-i18n="gLo">网格下沿</label><input id="gLo" type="number" value="64000" step="any"></div>
+      <div><label data-i18n="gN">格数</label><input id="gN" type="number" value="6" step="1"></div>
+    </div>
+    <div class="hint" data-i18n="gridHint">规则校验：强平价不得落入网格区间；挂单价自动吸附到末位 5 的整数。</div>
+    <div id="gridBox"></div>
+    <div class="alert" id="a2"></div>
+  </div>
+
+  <!-- 4. 梯度止盈 -->
+  <div class="card">
+    <h2 data-i18n="card4">④ 梯度止盈（T1 / T2 / T3）</h2>
+    <div class="row3">
+      <div><label data-i18n="t1p">T1 价位</label><input id="t1p" type="number" value="69000" step="any"></div>
+      <div><label data-i18n="t1q">T1 平仓 %</label><input id="t1q" type="number" value="40"></div>
+      <div><label data-i18n="t1s">T1 后止损移至</label><input id="t1s" type="number" value="68000" step="any"></div>
+    </div>
+    <div class="row3">
+      <div><label data-i18n="t2p">T2 价位</label><input id="t2p" type="number" value="70500" step="any"></div>
+      <div><label data-i18n="t2q">T2 平仓 %</label><input id="t2q" type="number" value="40"></div>
+      <div><label data-i18n="t3p">T3 价位（剩余）</label><input id="t3p" type="number" value="73000" step="any"></div>
+    </div>
+    <div class="out" id="r2"></div>
+    <div class="alert" id="a3"></div>
+    <button class="act" onclick="copyPlan()" data-i18n="copyBtn">📋 复制今日交易计划文本</button>
+  </div>
+
+  <!-- 5. 凯利仓位 -->
+  <div class="card">
+    <h2 data-i18n="card5">⑤ 凯利仓位校验（可选）</h2>
+    <div class="row">
+      <div><label data-i18n="win">历史胜率 %</label><input id="win" type="number" value="45"></div>
+      <div><label data-i18n="wr">平均盈亏比（盈:亏）</label><input id="wr" type="number" value="2.5" step="0.1"></div>
+    </div>
+    <div class="out" id="r3"></div>
+  </div>
+
+  <!-- 6. 传递挑战 -->
+  <div class="card chal">
+    <h2 data-i18n="chTitle">🔥 传递挑战 · Pass-It-On</h2>
+    <div class="steps">
+      <span data-i18n="chStep1">① 用它做完一次开仓自检</span><br>
+      <span data-i18n="chStep2">② 截图你的"✅ 风控有效"结果</span><br>
+      <span data-i18n="chStep3">③ 发给一位交易朋友，邀请他接力</span>
+    </div>
+    <div class="hint" data-i18n="chSlogan">每多一个节点，就少一个人爆仓 · 免费版永久免费，欢迎分享</div>
+    <div class="hint" style="margin-top:8px">⭐ <a id="proLink" href="#" data-i18n="chGetPro">付费增强版（批量网格 + 交易复盘）</a> · <a id="repoLink" href="#" data-i18n="chRepo">开源仓库</a></div>
+  </div>
+
+  <div class="foot" data-i18n="foot">估算工具，强平价按逐仓简化模型，实际以交易所为准 · 每次开仓前必算 · 不构成投资建议</div>
+</div>
+
+<script>
+// ---- 语言 ----
+let LANG = localStorage.getItem('riskcalc_lang') || '';
+const qLang = new URLSearchParams(location.search).get('lang');
+if(qLang==='en'||qLang==='zh') LANG=qLang;
+if(!LANG) LANG='zh';
+localStorage.setItem('riskcalc_lang',LANG);
+
+const I18N = {
+zh:{
+  title:'合约风控计算器 · 开仓前必算', h1:'合约风控计算器',
+  slogan:'开仓前花 20 秒，挡住 90% 的爆仓 · 强平距离 / 仓位 / 网格 / 梯度止盈 一次算清',
+  dirLong:'做多', dirShort:'做空',
+  card1:'① 账户与方向', card2:'② 开仓 / 止损 / 强平', card3:'③ 网格挂单（自动取 05 结尾整数）', card4:'④ 梯度止盈（T1 / T2 / T3）', card5:'⑤ 凯利仓位校验（可选）',
+  equity:'账户余额 (USDT)', lev:'杠杆倍数', riskPct:'单笔风险比例 %（建议 1~3）', mmr:'维持保证金率 %（一般 0.5）',
+  entry:'开仓价', stop:'止损价', face:'合约面值（币/张，0=按币数）',
+  gHi:'网格上沿', gLo:'网格下沿', gN:'格数',
+  gridHint:'规则校验：强平价不得落入网格区间；挂单价自动吸附到末位 5 的整数。',
+  t1p:'T1 价位', t1q:'T1 平仓 %', t1s:'T1 后止损移至', t2p:'T2 价位', t2q:'T2 平仓 %', t3p:'T3 价位（剩余）',
+  copyBtn:'📋 复制今日交易计划文本', win:'历史胜率 %', wr:'平均盈亏比（盈:亏）',
+  liq:'预估强平价', slDist:'止损距离', posByRisk:'风险反推仓位', margin:'占用保证金', notional:'仓位名义价值',
+  coinUnit:' 币 / ', byCoin:'按币数下单', equityExp:'% 本金暴露',
+  errLongStop:'❌ 做多时止损价必须低于开仓价', errShortStop:'❌ 做空时止损价必须高于开仓价',
+  errStopBeyond:'❌ 止损价排在强平价后面，会先爆仓！放宽杠杆或收紧止损',
+  okStop:'✅ 止损在强平之前触发，风控有效',
+  gridLvl:'第{i}档', gridPrice:'挂单价(05吸附)', gridNote:'提示', nearLiq:'⚠️ 近强平',
+  errGridLiq:'❌ 强平价 {x} 落在网格区间内——违反铁律！调整杠杆或扩大止损',
+  okGrid:'✅ 强平价在网格区间之外，挂单安全',
+  t1Out:'T1 止盈 {q}%，止损移到 {s}', t2Out:'T2 止盈 {q}%', t3Out:'T3 剩余 {q}%', totalPnl:'计划总盈亏（全打满）',
+  errT1sLong:'T1 保本止损不应低于开仓价（多单）', errQtyOverflow:'T1+T2 平仓比例超过 100%',
+  errOrderLong:'多单止盈价应满足 开仓<T1<T2<T3', errOrderShort:'空单止盈价应满足 开仓>T1>T2>T3',
+  okTP:'✅ 三档结构合理，记得全部挂 OCO（止盈/止损联动）',
+  kellyFull:'全凯利建议仓位', kellyHalf:'半凯利（实战推荐）', kellyAmt:'对应金额', kellyNeg:'期望为负，此策略不该开仓',
+  foot:'估算工具，强平价按逐仓简化模型，实际以交易所为准 · 每次开仓前必算 · 不构成投资建议',
+  copied:'已复制，可粘贴到备忘录/群聊', planHead:'交易计划', long:'做多', short:'做空',
+  ocoLine:'全部挂 OCO，打计划外不操作',
+  chTitle:'🔥 传递挑战 · Pass-It-On',
+  chStep1:'① 用它做完一次开仓自检', chStep2:'② 截图你的"✅ 风控有效"结果', chStep3:'③ 发给一位交易朋友，邀请他接力',
+  chSlogan:'每多一个节点，就少一个人爆仓 · 免费版永久免费，欢迎分享',
+  chGetPro:'付费增强版（批量网格 + 交易复盘）', chRepo:'开源仓库'
+},
+en:{
+  title:'Risk Guard Calculator · Check Before Every Entry', h1:'Risk Guard Calculator',
+  slogan:'20 seconds before entry blocks 90% of liquidations · Liq distance / position / grid / scaled TP in one pass',
+  dirLong:'Long', dirShort:'Short',
+  card1:'① Account & Direction', card2:'② Entry / Stop / Liquidation', card3:'③ Grid Orders (05-snapped)', card4:'④ Scaled Take-Profit (T1/T2/T3)', card5:'⑤ Kelly Check (optional)',
+  equity:'Account equity (USDT)', lev:'Leverage (x)', riskPct:'Risk per trade % (1~3 suggested)', mmr:'Maintenance margin % (usually 0.5)',
+  entry:'Entry price', stop:'Stop-loss price', face:'Contract size (coin/ct, 0=by coin)',
+  gHi:'Grid top', gLo:'Grid bottom', gN:'Levels',
+  gridHint:'Rule check: liquidation price must stay OUTSIDE the grid range; order prices auto-snap to 05-ending levels.',
+  t1p:'T1 price', t1q:'T1 close %', t1s:'After T1 move stop to', t2p:'T2 price', t2q:'T2 close %', t3p:'T3 price (rest)',
+  copyBtn:'📋 Copy today\'s trade plan', win:'Historical win rate %', wr:'Avg win/loss ratio (W:L)',
+  liq:'Est. liquidation price', slDist:'Stop distance', posByRisk:'Position by risk', margin:'Margin used', notional:'Notional exposure',
+  coinUnit:' coins / ', byCoin:'by coin', equityExp:'% of equity',
+  errLongStop:'❌ In a long, stop must be BELOW entry', errShortStop:'❌ In a short, stop must be ABOVE entry',
+  errStopBeyond:'❌ Stop sits beyond the liquidation price — you get liquidated FIRST! Lower leverage or tighten the stop',
+  okStop:'✅ Stop triggers before liquidation — risk control valid',
+  gridLvl:'Lvl {i}', gridPrice:'Grid price (05-snap)', gridNote:'Note', nearLiq:'⚠️ near liq',
+  errGridLiq:'❌ Liquidation price {x} falls INSIDE the grid range — iron rule violated! Adjust leverage or widen the stop',
+  okGrid:'✅ Liquidation price is outside the grid — safe to place orders',
+  t1Out:'T1 TP {q}% · move stop to {s}', t2Out:'T2 TP {q}%', t3Out:'T3 rest {q}%', totalPnl:'Total PnL (if all filled)',
+  errT1sLong:'T1 break-even stop should not be below entry (long)', errQtyOverflow:'T1+T2 close ratio exceeds 100%',
+  errOrderLong:'Long TP prices must satisfy entry<T1<T2<T3', errOrderShort:'Short TP prices must satisfy entry>T1>T2>T3',
+  okTP:'✅ Structure is sound — place OCO (TP/SL linked) on ALL legs',
+  kellyFull:'Full Kelly', kellyHalf:'Half Kelly (recommended)', kellyAmt:'Amount', kellyNeg:'❌ Negative expectancy — do not take this trade',
+  foot:'Estimation tool · liq price uses a simplified isolated-margin model, exchange values prevail · calculate before EVERY entry · not financial advice',
+  copied:'Copied! Paste it into your notes/group', planHead:'TRADE PLAN', long:'LONG', short:'SHORT',
+  ocoLine:'All legs on OCO — no action outside the plan',
+  chTitle:'🔥 Pass-It-On Challenge',
+  chStep1:'① Run one pre-entry check with it', chStep2:'② Screenshot your "✅ risk control valid" result', chStep3:'③ Send it to one trading friend and invite them to pass it on',
+  chSlogan:'Every new node = one fewer liquidation · Free version is free forever, share it freely',
+  chGetPro:'Pro version (batch grid + trade journal)', chRepo:'Open-source repo'
+}};
+const T = k => I18N[LANG][k] || k;
+
+const S = { dir:'long' };
+const $ = id => document.getElementById(id);
+const n = id => parseFloat($(id).value)||0;
+const money = v => v.toLocaleString(LANG==='en'?'en-US':'zh-CN',{maximumFractionDigits:4});
+
+function switchLang(){
+  LANG = LANG==='en' ? 'zh' : 'en';
+  localStorage.setItem('riskcalc_lang',LANG);
+  applyLang();
+}
+function applyLang(){
+  document.documentElement.lang = LANG==='en'?'en':'zh-CN';
+  document.title = T('title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = T(el.dataset.i18n); });
+  $('langBtn').textContent = LANG==='en' ? '中文' : 'EN';
+  calc();
+}
+
+function seg(k,v){
+  S[k]=v;
+  document.querySelectorAll('#dirSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  // 多空切换时止损默认位置对调无需处理，用户自行填
+  calc();
+}
+// 吸附到倒数第三位为0/5的整数：68000→68000, 67333→67500, 6840→6850, 683→685
+function round05(p){
+  if(p<=0) return p;
+  const digits = Math.floor(Math.log10(p))+1;        // 整数位数
+  const step = 5*Math.pow(10, Math.max(0, digits-3));
+  return Math.round(p/step)*step;
+}
+function calc(){
+  const dir=S.dir==='long'?1:-1, eq=n('equity'), lev=n('lev'), riskPct=n('riskPct'), mmr=n('mmr')/100;
+  const e=n('entry'), sl=n('stop'), face=n('face');
+  const box=$('r1'), a1=$('a1'); box.innerHTML=''; a1.className='alert';
+  if(e<=0||lev<=0){return;}
+  // 强平价（逐仓简化）：多=入场*(1-1/杠杆+MMR)，空=入场*(1+1/杠杆-MMR)
+  const liq = dir===1 ? e*(1-1/lev+mmr) : e*(1+1/lev-mmr);
+  let qty=0, riskAmt=eq*riskPct/100;
+  const slDist = Math.abs(e-sl);
+  if(sl>0 && sl!==e){
+    qty = riskAmt/slDist; // 风险反推币数
+  }
+  const margin = qty*e/lev;
+  const notional = qty*e;
+  box.innerHTML =
+    `<div><span class="k">${T('liq')}</span><span class="bad">${money(liq)}</span></div>`+
+    (sl>0?`<div><span class="k">${T('slDist')}</span><span>${money(slDist)} (${(slDist/e*100).toFixed(2)}%)</span></div>
+    <div><span class="k">${T('posByRisk')}</span><span class="ok">${money(qty)}${T('coinUnit')}${face>0?money(qty/face)+' ct':T('byCoin')}</span></div>
+    <div><span class="k">${T('margin')}</span><span>${money(margin)} USDT</span></div>
+    <div><span class="k">${T('notional')}</span><span>${money(notional)} USDT (${(notional/eq*100).toFixed(1)}${T('equityExp')})</span></div>`:'');
+
+  // 校验1：多单止损须低于开仓，空单相反
+  a1.classList.add('show');
+  if(dir===1 && sl>=e && sl>0){ a1.className='alert bad show'; a1.textContent=T('errLongStop'); }
+  else if(dir===-1 && sl<=e && sl>0){ a1.className='alert bad show'; a1.textContent=T('errShortStop'); }
+  else if(sl>0 && dir===1 && sl<=liq){ a1.className='alert bad show'; a1.textContent=T('errStopBeyond'); }
+  else if(sl>0 && dir===-1 && sl>=liq){ a1.className='alert bad show'; a1.textContent=T('errStopBeyond'); }
+  else { a1.className='alert ok show'; a1.textContent=T('okStop'); }
+
+  // 网格
+  const hi=n('gHi'), lo=n('gLo'), gn=Math.max(1,Math.round(n('gN')));
+  const gb=$('gridBox'), a2=$('a2'); gb.innerHTML=''; a2.className='alert';
+  if(hi>0 && lo>0 && hi>lo){
+    const step=(hi-lo)/gn; let rows='';
+    for(let i=0;i<=gn;i++){
+      const p=round05(hi-step*i);
+      rows+=`<tr><td>${T('gridLvl').replace('{i}',i)}</td><td>${money(p)}</td><td>${Math.abs(p-liq)<step/2?T('nearLiq'):''}</td></tr>`;
+    }
+    gb.innerHTML=`<table><tr><th></th><th>${T('gridPrice')}</th><th>${T('gridNote')}</th></tr>${rows}</table>`;
+    if(liq>=lo && liq<=hi){ a2.className='alert bad show'; a2.textContent=T('errGridLiq').replace('{x}',money(liq)); }
+    else { a2.className='alert ok show'; a2.textContent=T('okGrid'); }
+  }
+
+  // 梯度止盈
+  const t1=n('t1p'),t2=n('t2p'),t3=n('t3p'),q1=n('t1q')/100,q2=n('t2q')/100,t1s=n('t1s');
+  const r2=$('r2'), a3=$('a3');
+  if(t1>0&&qty>0){
+    const pnl=(p,q)=> (p-e)*dir*qty*q;
+    const tot=pnl(t1,1)+pnl(t2,q2)+pnl(t3,1-q1-q2);
+    r2.innerHTML =
+      `<div><span class="k">${T('t1Out').replace('{q}',q1*100).replace('{s}',money(t1s))}</span><span class="ok">${money(pnl(t1,q1))} USDT</span></div>`+
+      `<div><span class="k">${T('t2Out').replace('{q}',q2*100)}</span><span class="ok">${money(pnl(t2,q2))} USDT</span></div>`+
+      `<div><span class="k">${T('t3Out').replace('{q}',(1-q1-q2)*100)}</span><span>${money(pnl(t3,1-q1-q2))} USDT</span></div>`+
+      `<div><span class="k">${T('totalPnl')}</span><span class="ok">+${money(tot)} USDT</span></div>`;
+    let bad='';
+    if(dir===1 && t1s<e) bad=T('errT1sLong');
+    if(q1+q2>100/100+0.001) bad=T('errQtyOverflow');
+    if(dir===1 && !(e<t1&&t1<t2&&t2<t3)) bad=T('errOrderLong');
+    if(dir===-1 && !(e>t1&&t1>t2&&t2>t3)) bad=T('errOrderShort');
+    a3.className = bad?'alert bad show':'alert ok show';
+    a3.textContent = bad?'❌ '+bad:T('okTP');
+    window._plan={liq,qty,margin,tot};
+  }
+
+  // 凯利
+  const w=n('win')/100, wr=n('wr');
+  const r3=$('r3');
+  if(wr>0){
+    const f=w-(1-w)/wr; // 凯利公式
+    const half=Math.max(0,f/2);
+    r3.innerHTML =
+      `<div><span class="k">${T('kellyFull')}</span><span class="${f<=0?'bad':'warn'}">${(f*100).toFixed(1)}%</span></div>`+
+      `<div><span class="k">${T('kellyHalf')}</span><span class="ok">${(half*100).toFixed(1)}%</span></div>`+
+      `<div><span class="k">${T('kellyAmt')}</span><span>${money(eq*half)} USDT</span></div>`;
+    if(f<=0) r3.innerHTML+=`<div><span class="k"></span><span class="bad">${T('kellyNeg')}</span></div>`;
+  }
+}
+function copyPlan(){
+  const p=window._plan||{};
+  const dir=S.dir==='long'?T('long'):T('short');
+  const txt=`【${T('planHead')} ${new Date().toLocaleString(LANG==='en'?'en-US':'zh-CN')}】${dir}\n${T('entry')} ${$('entry').value} / ${T('stop')} ${$('stop').value} / ${T('liq')}≈${(p.liq||0).toFixed(2)}\n${T('lev')} ${$('lev').value}x · ${T('posByRisk')} ${(p.qty||0).toFixed(4)} · ${T('margin')}≈${(p.margin||0).toFixed(2)} U\nT1 ${$('t1p').value}(${$('t1q').value}%) → T2 ${$('t2p').value}(${$('t2q').value}%) → T3 ${$('t3p').value}\n${T('ocoLine')}`;
+  navigator.clipboard.writeText(txt).then(()=>alert(T('copied')));
+}
+// 对外链接占位：账号就绪后替换
+document.getElementById('proLink').href  = '#'; // TODO: Gumroad 付费版链接
+document.getElementById('repoLink').href = '#'; // TODO: GitHub 仓库链接
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input',calc));
+applyLang();
+</script>
+</body>
+</html>
