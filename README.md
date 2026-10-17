@@ -21,7 +21,14 @@ Most futures blow-ups are not "wrong direction" — they are **wrong size, wrong
 | ③ Grid ladder | Pending orders auto-snap to 05-ending levels; **fails hard if the liquidation price falls inside the grid range** |
 | ④ T1 / T2 / T3 scaled TP | Ladder take-profit with stop-move, OCO reminders, total-PnL preview |
 | ⑤ Kelly check (optional) | Full & half-Kelly sizing from your historical win-rate and payoff ratio |
+| 🏆 Risk Rank + share card | S/A/B/C discipline grade from the three rule-checks — one click renders a 1200×630 PNG share card with a QR code back to the site. Built for the **#RiskRankChallenge** |
 | 📋 Copy plan | One click → paste your full trade plan into notes or a group chat |
+
+## The Risk Rank Challenge 🏆
+
+Finish a check → get your rank (**S** = zero red flags, all targets sane) → download your share card (QR included) → post it with **#RiskRankChallenge** and challenge one friend to beat your grade.
+
+Screenshot the card, not your PnL. Discipline is the flex.
 
 ## The Pass-It-On Challenge 🔥
 
