@@ -4,7 +4,7 @@
 
 No install · No build · No signup · Works offline · 中文 / EN built-in
 
-> 🔗 **Live demo:** _link lands here once GitHub Pages is on_ — the demo IS `index.html`, the whole app is one file.
+> 🔗 **Live demo:** <https://haolinsong32-lang.github.io/perp-risk-guard/> — the demo IS `index.html`, the whole app is one file.
 
 ---
 
