@@ -112,6 +112,13 @@
     <button class="act" onclick="copyPlan()" data-i18n="copyBtn">📋 复制今日交易计划文本</button>
   </div>
 
+  <!-- 风控段位 + 分享卡片 -->
+  <div class="card">
+    <h2 data-i18n="cardRank">🏆 风控段位 · 分享你的纪律</h2>
+    <div class="out" id="rankBox"><div class="hint" data-i18n="rankHint">完成 ①~④ 后自动评级。S = 纪律满格，可截图发起传递挑战。</div></div>
+    <button class="act" onclick="genShare()" data-i18n="shareBtn" style="margin-top:10px">🖼 生成分享卡片（PNG）</button>
+  </div>
+
   <!-- 5. 凯利仓位 -->
   <div class="card">
     <h2 data-i18n="card5">⑤ 凯利仓位校验（可选）</h2>
@@ -157,6 +164,15 @@ zh:{
   gridHint:'规则校验：强平价不得落入网格区间；挂单价自动吸附到末位 5 的整数。',
   t1p:'T1 价位', t1q:'T1 平仓 %', t1s:'T1 后止损移至', t2p:'T2 价位', t2q:'T2 平仓 %', t3p:'T3 价位（剩余）',
   copyBtn:'📋 复制今日交易计划文本', win:'历史胜率 %', wr:'平均盈亏比（盈:亏）',
+  cardRank:'🏆 风控段位 · 分享你的纪律', shareBtn:'🖼 生成分享卡片（PNG）',
+  rankHint:'完成 ①~④ 后自动评级。S = 纪律满格，可截图发起传递挑战。',
+  rankS:'S 级 · 纪律满格', rankA:'A 级 · 风控在线', rankB:'B 级 · 有明显漏洞', rankC:'C 级 · 爆仓边缘',
+  rankNoteS:'止损/强平/网格/止盈四道铁律全过。这张卡片，值得发给一位还在裸开的兄弟。',
+  rankNoteA:'主铁律已过，但网格或止盈有瑕疵。发出去之前，先把红字消掉。',
+  rankNoteB:'存在硬性违规——强平落进网格或止损方向错误。别开仓，先修。',
+  rankNoteC:'多道铁律被破。现在开仓=给交易所送钱。把红字全部消掉再来。',
+  rankBeat:'约击败了 {x}% 的合约玩家（多数人不设止损/让强平进网格）',
+  shareTag:'#风控段位挑战 · 你能到 S 吗？',
   liq:'预估强平价', slDist:'止损距离', posByRisk:'风险反推仓位', margin:'占用保证金', notional:'仓位名义价值',
   coinUnit:' 币 / ', byCoin:'按币数下单', equityExp:'% 本金暴露',
   errLongStop:'❌ 做多时止损价必须低于开仓价', errShortStop:'❌ 做空时止损价必须高于开仓价',
@@ -189,6 +205,15 @@ en:{
   gridHint:'Rule check: liquidation price must stay OUTSIDE the grid range; order prices auto-snap to 05-ending levels.',
   t1p:'T1 price', t1q:'T1 close %', t1s:'After T1 move stop to', t2p:'T2 price', t2q:'T2 close %', t3p:'T3 price (rest)',
   copyBtn:'📋 Copy today\'s trade plan', win:'Historical win rate %', wr:'Avg win/loss ratio (W:L)',
+  cardRank:'🏆 Risk Rank · Share Your Discipline', shareBtn:'🖼 Generate share card (PNG)',
+  rankHint:'Fill ①~④ to get ranked. S = full discipline — screenshot it and pass the challenge on.',
+  rankS:'Rank S · Full discipline', rankA:'Rank A · Solid risk control', rankB:'Rank B · Clear holes', rankC:'Rank C · Liquidation edge',
+  rankNoteS:'All four iron rules passed (stop/liq/grid/TP). This card deserves to be sent to one friend still trading naked.',
+  rankNoteA:'Core rules pass, but grid or TP has flaws. Clear the red text before sharing.',
+  rankNoteB:'Hard violation — liquidation inside grid or stop on wrong side. Do NOT enter; fix it first.',
+  rankNoteC:'Multiple rules broken. Entering now = donating to the exchange. Clear all red text first.',
+  rankBeat:'Outranks ~{x}% of futures traders (most skip stops or let liquidation inside grid)',
+  shareTag:'#RiskRankChallenge — can you reach S?',
   liq:'Est. liquidation price', slDist:'Stop distance', posByRisk:'Position by risk', margin:'Margin used', notional:'Notional exposure',
   coinUnit:' coins / ', byCoin:'by coin', equityExp:'% of equity',
   errLongStop:'❌ In a long, stop must be BELOW entry', errShortStop:'❌ In a short, stop must be ABOVE entry',
@@ -319,6 +344,50 @@ function calc(){
       `<div><span class="k">${T('kellyAmt')}</span><span>${money(eq*half)} USDT</span></div>`;
     if(f<=0) r3.innerHTML+=`<div><span class="k"></span><span class="bad">${T('kellyNeg')}</span></div>`;
   }
+
+  // 风控段位评级（读取三道 alert 的 class）
+  const rankBox=$('rankBox');
+  const cls=id=>$(id).className;
+  const bad1=cls('a1').includes('bad'), bad2=cls('a2').includes('bad'), bad3=cls('a3').includes('bad');
+  const badN=[bad1,bad2,bad3].filter(Boolean).length;
+  let grade,color,note,beat;
+  if(badN===0 && t1>0 && hi>0 && lo>0){ grade='S'; color='#ffb020'; note=T('rankNoteS'); beat=95; }
+  else if(!bad1){ grade='A'; color='#2ecc8f'; note=T('rankNoteA'); beat=70; }
+  else if(badN<=1){ grade='B'; color='#5b9dff'; note=T('rankNoteB'); beat=40; }
+  else { grade='C'; color='#ff5d6c'; note=T('rankNoteC'); beat=10; }
+  rankBox.innerHTML =
+    `<div style="display:flex;align-items:center;gap:14px;margin-top:6px">`+
+    `<div style="flex:none;width:64px;height:64px;border-radius:16px;background:${color}22;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:${color}">${grade}</div>`+
+    `<div><div style="font-weight:800;color:${color}">${T('rank'+grade)}</div>`+
+    `<div style="font-size:12px;color:var(--sub);margin-top:2px">${note}</div>`+
+    `<div style="font-size:12px;color:var(--acc);margin-top:4px">${T('rankBeat').replace('{x}',beat)}</div></div></div>`;
+  window._rank={grade,color,note,beat,liq:window._plan?.liq||0,qty:window._plan?.qty||0,tot:window._plan?.tot||0};
+}
+function genShare(){
+  const r=window._rank;
+  if(!r){ alert(LANG==='en'?'Fill the form first':'先填完上面的参数'); return; }
+  const dir=S.dir==='long'?T('long'):T('short');
+  const W=1200,H=630,c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  x.fillStyle='#0f1115'; x.fillRect(0,0,W,H);
+  const g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,r.color+'33'); g.addColorStop(1,'#0f111500');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  x.strokeStyle=r.color; x.lineWidth=6; x.strokeRect(18,18,W-36,H-36);
+  x.fillStyle='#e8ecf3'; x.font='700 34px sans-serif';
+  x.fillText(LANG==='en'?'PERP RISK GUARD · RISK RANK':'合约风控计算器 · 风控段位',50,80);
+  x.fillStyle=r.color; x.font='900 200px sans-serif'; x.textAlign='center';
+  x.fillText(r.grade,W/2,H/2+90); x.textAlign='left';
+  x.fillStyle='#e8ecf3'; x.font='700 40px sans-serif';
+  x.fillText(T('rank'+r.grade),50,H/2+10);
+  x.fillStyle='#8b93a7'; x.font='400 26px sans-serif';
+  x.fillText(`${dir} · ${T('entry')} ${$('entry').value} · ${T('lev')} ${$('lev').value}x · ${T('liq')}≈${(r.liq||0).toFixed(2)}`,50,H/2+70);
+  x.fillStyle=r.color; x.font='700 30px sans-serif';
+  x.fillText(T('rankBeat').replace('{x}',r.beat),50,H-90);
+  x.fillStyle='#5b9dff'; x.font='600 26px sans-serif';
+  x.fillText(T('shareTag'),50,H-45);
+  x.fillStyle='#8b93a7'; x.font='400 22px sans-serif'; x.textAlign='right';
+  x.fillText('haolinsong32-lang.github.io/perp-risk-guard',W-50,H-45); x.textAlign='left';
+  const a=document.createElement('a'); a.download=`risk-rank-${r.grade}.png`; a.href=c.toDataURL('image/png'); a.click();
 }
 function copyPlan(){
   const p=window._plan||{};
