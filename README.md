@@ -35,7 +35,7 @@ This tool is **free forever**. In exchange, when it saves your account once:
 
 ## Spread & earn 30% (optional)
 
-Want to do more than pass it on? A paid **Pro edition** (batch grid planning + trade journal & replay) is coming. Affiliates earn **30% on every sale** via Gumroad — link lands here.
+Want to do more than pass it on? The paid **Pro edition** (batch grid A/B/C compare + plan archive + trade journal & review) is live at **[pay.suka.net.cn](https://pay.suka.net.cn)** — 9 USDT, instant delivery via USDT multi-chain payment or redeem code. Affiliates earn **30% on every sale** (StoneVast Node Program) — contact haolinsong32@gmail.com to get your referral codes.
 
 ## Run locally
 
@@ -47,7 +47,7 @@ Zero dependencies, zero network calls — data never leaves your browser. Langua
 ## Roadmap
 
 - [x] Single-file free edition (this repo)
-- [ ] Pro edition: batch grid, trade journal & replay
+- [x] Pro edition: batch grid A/B/C compare, plan archive, trade journal & review — [get it here](https://pay.suka.net.cn) (9 USDT)
 - [ ] Live exchange price fetch (opt-in)
 
 ## License

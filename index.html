@@ -327,7 +327,7 @@ function copyPlan(){
   navigator.clipboard.writeText(txt).then(()=>alert(T('copied')));
 }
 // 对外链接占位：账号就绪后替换
-document.getElementById('proLink').href  = '#'; // TODO: Gumroad 付费版链接
+document.getElementById('proLink').href  = 'https://pay.suka.net.cn'; // Pro 付费版（9 USDT，USDT多链支付+兑换码交付）
 document.getElementById('repoLink').href = 'https://github.com/haolinsong32-lang/perp-risk-guard';
 
 document.querySelectorAll('input').forEach(el=>el.addEventListener('input',calc));
