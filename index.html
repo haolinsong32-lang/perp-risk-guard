@@ -289,7 +289,7 @@ function calc(){
     <div><span class="k">${T('margin')}</span><span>${money(margin)} USDT</span></div>
     <div><span class="k">${T('notional')}</span><span>${money(notional)} USDT (${(notional/eq*100).toFixed(1)}${T('equityExp')})</span></div>`:'');
 
-  // 校验1：多单止损须低于开仓，空单相反
+  // 校验1：看涨止损须低于开仓，看跌相反
   a1.classList.add('show');
   if(dir===1 && sl>=e && sl>0){ a1.className='alert bad show'; a1.textContent=T('errLongStop'); }
   else if(dir===-1 && sl<=e && sl>0){ a1.className='alert bad show'; a1.textContent=T('errShortStop'); }
