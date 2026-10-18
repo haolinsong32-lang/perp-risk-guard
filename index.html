@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>合约风控计算器 · 开仓前必算</title>
+<title>开仓风险自检 · 冷静 20 秒</title>
 <style>
   :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--txt:#e8ecf3;--sub:#8b93a7;--acc:#5b9dff;--ok:#2ecc8f;--warn:#ffb020;--bad:#ff5d6c;}
   *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;}
@@ -49,15 +49,15 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🛡️ <span data-i18n="h1">合约风控计算器</span><button id="langBtn" onclick="switchLang()">EN</button></h1>
-  <div class="slogan" data-i18n="slogan">开仓前花 20 秒，挡住 90% 的爆仓 · 强平距离 / 仓位 / 网格 / 梯度止盈 一次算清</div>
+  <h1>🛡️ <span data-i18n="h1">开仓风险自检</span><button id="langBtn" onclick="switchLang()">EN</button></h1>
+  <div class="slogan" data-i18n="slogan">这不是交易所，只是开仓前的一次冷静自检：强平距离 / 仓位 / 网格 / 止盈，20 秒算清</div>
 
   <!-- 1. 方向与账户 -->
   <div class="card">
-    <h2 data-i18n="card1">① 账户与方向</h2>
+    <h2 data-i18n="card1">① 账户与仓位方向</h2>
     <div class="seg" id="dirSeg">
-      <button data-v="long" class="on" onclick="seg('dir','long')" data-i18n="dirLong">做多</button>
-      <button data-v="short" onclick="seg('dir','short')" data-i18n="dirShort">做空</button>
+      <button data-v="long" class="on" onclick="seg('dir','long')" data-i18n="dirLong">看涨</button>
+      <button data-v="short" onclick="seg('dir','short')" data-i18n="dirShort">看跌</button>
     </div>
     <div class="row">
       <div><label data-i18n="equity">账户余额 (USDT)</label><input id="equity" type="number" value="1000"></div>
@@ -154,10 +154,10 @@ localStorage.setItem('riskcalc_lang',LANG);
 
 const I18N = {
 zh:{
-  title:'合约风控计算器 · 开仓前必算', h1:'合约风控计算器',
-  slogan:'开仓前花 20 秒，挡住 90% 的爆仓 · 强平距离 / 仓位 / 网格 / 梯度止盈 一次算清',
-  dirLong:'做多', dirShort:'做空',
-  card1:'① 账户与方向', card2:'② 开仓 / 止损 / 强平', card3:'③ 网格挂单（自动取 05 结尾整数）', card4:'④ 梯度止盈（T1 / T2 / T3）', card5:'⑤ 凯利仓位校验（可选）',
+  title:'开仓风险自检 · 冷静 20 秒', h1:'开仓风险自检',
+  slogan:'这不是交易所，只是开仓前的一次冷静自检：强平距离 / 仓位 / 网格 / 止盈，20 秒算清',
+  dirLong:'看涨', dirShort:'看跌',
+  card1:'① 账户与仓位方向', card2:'② 开仓 / 止损 / 强平', card3:'③ 网格挂单（自动取 05 结尾整数）', card4:'④ 梯度止盈（T1 / T2 / T3）', card5:'⑤ 凯利仓位校验（可选）',
   equity:'账户余额 (USDT)', lev:'杠杆倍数', riskPct:'单笔风险比例 %（建议 1~3）', mmr:'维持保证金率 %（一般 0.5）',
   entry:'开仓价', stop:'止损价', face:'合约面值（币/张，0=按币数）',
   gHi:'网格上沿', gLo:'网格下沿', gN:'格数',
@@ -195,10 +195,10 @@ zh:{
   chGetPro:'付费增强版（批量网格 + 交易复盘）', chRepo:'开源仓库'
 },
 en:{
-  title:'Risk Guard Calculator · Check Before Every Entry', h1:'Risk Guard Calculator',
-  slogan:'20 seconds before entry blocks 90% of liquidations · Liq distance / position / grid / scaled TP in one pass',
-  dirLong:'Long', dirShort:'Short',
-  card1:'① Account & Direction', card2:'② Entry / Stop / Liquidation', card3:'③ Grid Orders (05-snapped)', card4:'④ Scaled Take-Profit (T1/T2/T3)', card5:'⑤ Kelly Check (optional)',
+  title:'Pre-Trade Risk Check · 20 calm seconds', h1:'Pre-Trade Risk Check',
+  slogan:'Not an exchange — a 20-second sanity check before you open a leveraged position: liq distance / size / grid / take-profit',
+  dirLong:'Bullish', dirShort:'Bearish',
+  card1:'① Account & Position', card2:'② Entry / Stop / Liquidation', card3:'③ Grid Orders (05-snapped)', card4:'④ Scaled Take-Profit (T1/T2/T3)', card5:'⑤ Kelly Check (optional)',
   equity:'Account equity (USDT)', lev:'Leverage (x)', riskPct:'Risk per trade % (1~3 suggested)', mmr:'Maintenance margin % (usually 0.5)',
   entry:'Entry price', stop:'Stop-loss price', face:'Contract size (coin/ct, 0=by coin)',
   gHi:'Grid top', gLo:'Grid bottom', gN:'Levels',
@@ -425,7 +425,7 @@ async function genShare(){
 }
 function copyPlan(){
   const p=window._plan||{};
-  const dir=S.dir==='long'?T('long'):T('short');
+  const dir=S.dir==='long'?T('dirLong'):T('dirShort');
   const txt=`【${T('planHead')} ${new Date().toLocaleString(LANG==='en'?'en-US':'zh-CN')}】${dir}\n${T('entry')} ${$('entry').value} / ${T('stop')} ${$('stop').value} / ${T('liq')}≈${(p.liq||0).toFixed(2)}\n${T('lev')} ${$('lev').value}x · ${T('posByRisk')} ${(p.qty||0).toFixed(4)} · ${T('margin')}≈${(p.margin||0).toFixed(2)} U\nT1 ${$('t1p').value}(${$('t1q').value}%) → T2 ${$('t2p').value}(${$('t2q').value}%) → T3 ${$('t3p').value}\n${T('ocoLine')}`;
   navigator.clipboard.writeText(txt).then(()=>alert(T('copied')));
 }
